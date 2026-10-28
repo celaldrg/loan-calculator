@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Loan Calculator</title>
+  <meta name="description" content="Loan calculator that runs in your browser: monthly installment, total interest, tax on interest, extra payments, grace periods, the full payment schedule with CSV export and a side-by-side comparison of two offers. English and Turkish.">
+  <meta name="theme-color" content="#0f172a">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Loan Calculator">
+  <meta property="og:description" content="Installment, total interest and tax, extra payments, grace periods, payment schedule, CSV export and offer comparison. Runs in your browser.">
+  <meta property="og:url" content="https://celaldrg.github.io/loan-calculator/">
+  <meta property="og:image" content="https://celaldrg.github.io/loan-calculator/docs/screenshot.png">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f172a'/%3E%3Cpath fill='%2338bdf8' d='M12 14h10v20H12zM27 14h10v12H27zM42 14h10v6H42z'/%3E%3Cpath fill='%23bef264' d='M12 36h10v14H12zM27 28h10v22H27zM42 22h10v28H42z'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="src/main.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true">
+        <rect width="64" height="64" rx="14" fill="#0b1222"/>
+        <path fill="#38bdf8" d="M12 14h10v20H12zM27 14h10v12H27zM42 14h10v6H42z"/>
+        <path fill="#bef264" d="M12 36h10v14H12zM27 28h10v22H27zM42 22h10v28H42z"/>
+      </svg>
+      <h1 data-i18n="app.title">Loan Calculator</h1>
+    </div>
+    <div class="top-actions">
+      <button id="reset" class="btn btn-ghost" type="button" data-i18n-aria-label="action.resetAria" aria-label="Reset every field to the defaults">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.64-6.36L3 8M3 3v5h5"/></svg>
+        <span class="reset-label" data-i18n="action.reset">Reset</span>
+      </button>
+      <button id="lang" class="btn btn-lang" type="button" data-i18n="lang.switch" data-i18n-aria-label="lang.switchAria" aria-label="TR – Switch to Turkish">TR</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section id="form-card" class="card form-card" aria-labelledby="form-title">
+      <div class="card-head">
+        <h2 id="form-title" data-i18n="form.title">Loan details</h2>
+        <label class="switch">
+          <input id="compare-toggle" type="checkbox" role="switch">
+          <span class="switch-track" aria-hidden="true"></span>
+          <span data-i18n="form.compare">Compare offers</span>
+        </label>
+      </div>
+
+      <fieldset id="offer-picker" class="segmented offer-picker" hidden>
+        <legend class="sr-only" data-i18n="form.offers">Offer to edit</legend>
+        <label class="seg"><input type="radio" name="offer" value="a" checked><span data-i18n="offer.a">Offer A</span></label>
+        <label class="seg"><input type="radio" name="offer" value="b"><span data-i18n="offer.b">Offer B</span></label>
+      </fieldset>
+
+      <form id="loan-form" class="loan-form" novalidate>
+        <div class="group">
+          <div class="split">
+            <div class="field field-grow">
+              <label for="amount" data-i18n="field.amount">Loan amount</label>
+              <input id="amount" class="input input-amount" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" aria-describedby="amount-error">
+            </div>
+            <div class="field field-currency">
+              <label for="currency" data-i18n="field.currency">Currency</label>
+              <select id="currency" class="input select"></select>
+            </div>
+          </div>
+          <p id="amount-error" class="error" aria-live="polite"></p>
+        </div>
+
+        <div class="group">
+          <label for="rate" data-i18n="field.rate">Interest rate</label>
+          <div class="split split-keep">
+            <div class="affix-field pct-field field-grow">
+              <input id="rate" class="input" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" aria-describedby="rate-hint rate-error">
+              <span class="affix affix-pct" aria-hidden="true">%</span>
+            </div>
+            <fieldset class="segmented basis">
+              <legend class="sr-only" data-i18n="field.rateBasis">Rate period</legend>
+              <label class="seg"><input type="radio" name="rateBasis" value="monthly"><span data-i18n="basis.monthly">Monthly</span></label>
+              <label class="seg"><input type="radio" name="rateBasis" value="annual"><span data-i18n="basis.annual">Annual</span></label>
+            </fieldset>
+          </div>
+          <p id="rate-hint" class="hint"></p>
+          <p id="rate-error" class="error" aria-live="polite"></p>
+        </div>
+
+        <div class="group">
+          <div class="label-row">
+            <label for="term" data-i18n="field.term">Term (months)</label>
+            <span id="term-hint" class="label-note"></span>
+          </div>
+          <div class="split split-keep">
+            <input id="term" class="input input-term" type="number" inputmode="numeric" min="1" step="1" aria-describedby="term-hint term-error">
+            <input id="term-slider" class="range" type="range" min="0" step="1" data-i18n-aria-label="field.termSlider" aria-label="Term">
+          </div>
+          <p id="term-error" class="error" aria-live="polite"></p>
+        </div>
+
+        <fieldset class="group">
+          <legend data-i18n="field.method">Repayment</legend>
+          <div class="segmented">
+            <label class="seg"><input type="radio" name="method" value="annuity"><span data-i18n="method.annuity">Equal installments</span></label>
+            <label class="seg"><input type="radio" name="method" value="equalPrincipal"><span data-i18n="method.equalPrincipal">Equal principal</span></label>
+          </div>
+        </fieldset>
+
+        <div class="group">
+          <div class="split">
+            <div class="field">
+              <label for="tax" data-i18n="field.tax">Tax on interest</label>
+              <div class="affix-field pct-field">
+                <input id="tax" class="input" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" aria-describedby="tax-error tax-fees-hint">
+                <span class="affix affix-pct" aria-hidden="true">%</span>
+              </div>
+            </div>
+            <div class="field">
+              <label for="fees" data-i18n="field.fees">Upfront fees</label>
+              <div class="affix-field">
+                <span id="fees-symbol" class="affix" aria-hidden="true"></span>
+                <input id="fees" class="input" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" aria-describedby="fees-error tax-fees-hint">
+              </div>
+            </div>
+          </div>
+          <p id="tax-error" class="error" aria-live="polite"></p>
+          <p id="fees-error" class="error" aria-live="polite"></p>
+          <p id="tax-fees-hint" class="hint" data-i18n="hint.taxFees">Tax is charged on the interest of every installment (0 if none). Fees are paid once and count in the cost rate.</p>
+        </div>
+
+        <div class="group">
+          <div class="split">
+            <div class="field field-grace">
+              <label for="grace" data-i18n="field.grace">Grace months</label>
+              <input id="grace" class="input" type="number" inputmode="numeric" min="0" step="1" aria-describedby="grace-error">
+            </div>
+            <div class="field field-grow">
+              <label for="grace-type" data-i18n="field.graceType">During grace</label>
+              <select id="grace-type" class="input select">
+                <option value="interestOnly" data-i18n="grace.interestOnly">Pay interest</option>
+                <option value="capitalized" data-i18n="grace.capitalized">Add to balance</option>
+              </select>
+            </div>
+          </div>
+          <p id="grace-error" class="error" aria-live="polite"></p>
+        </div>
+
+        <div class="group extras">
+          <div class="label-row">
+            <h3 id="extras-title" class="group-title" data-i18n="extras.title">Extra payments</h3>
+            <button id="extra-add" class="btn btn-small" type="button" data-i18n-aria-label="extras.addAria" aria-label="Add an extra payment">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              <span data-i18n="extras.add">Add</span>
+            </button>
+          </div>
+          <p id="extras-empty" class="hint" data-i18n="extras.empty">One-off or recurring extra payments pay the loan off sooner.</p>
+          <ol id="extras-list" class="extras-list" aria-labelledby="extras-title"></ol>
+          <p id="extras-error" class="error" aria-live="polite"></p>
+          <fieldset id="strategy" class="group" hidden>
+            <legend data-i18n="extras.strategy">With extra payments</legend>
+            <div class="segmented">
+              <label class="seg"><input type="radio" name="extraStrategy" value="shortenTerm"><span data-i18n="strategy.shortenTerm">Shorter term</span></label>
+              <label class="seg"><input type="radio" name="extraStrategy" value="lowerPayment"><span data-i18n="strategy.lowerPayment">Lower installment</span></label>
+            </div>
+          </fieldset>
+        </div>
+      </form>
+
+      <details class="solver">
+        <summary>
+          <span data-i18n="solver.title">Work back from an installment</span>
+          <svg class="icon icon-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+        </summary>
+        <form id="solver-form" class="solver-form" novalidate>
+          <div class="field">
+            <label for="solver-payment" data-i18n="solver.payment">Installment you can pay</label>
+            <div class="affix-field">
+              <span id="solver-symbol" class="affix" aria-hidden="true"></span>
+              <input id="solver-payment" class="input" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" aria-describedby="solver-result solver-note">
+            </div>
+          </div>
+          <fieldset class="group">
+            <legend data-i18n="solver.target">Find the</legend>
+            <div class="segmented">
+              <label class="seg"><input type="radio" name="solveFor" value="amount" checked><span data-i18n="solver.amount">Amount</span></label>
+              <label class="seg"><input type="radio" name="solveFor" value="rate"><span data-i18n="solver.rate">Rate</span></label>
+              <label class="seg"><input type="radio" name="solveFor" value="term"><span data-i18n="solver.term">Term</span></label>
+            </div>
+          </fieldset>
+          <div class="solver-out">
+            <p id="solver-result" class="solver-result" aria-live="polite"></p>
+            <button id="solver-apply" class="btn btn-accent" type="submit" data-i18n="solver.apply" hidden>Use this</button>
+          </div>
+          <p id="solver-note" class="hint" data-i18n="solver.note">Assumes equal installments; the grace period and extra payments are left out.</p>
+        </form>
+      </details>
+
+      <a id="summary-bar" class="summary-bar" href="#results-card">
+        <span class="bar-item"><span data-i18n="bar.installment">Installment</span> <strong id="bar-installment"></strong></span>
+        <span class="bar-item"><span data-i18n="bar.total">Total</span> <strong id="bar-total"></strong></span>
+      </a>
+    </section>
+
+    <div class="output">
+      <div class="stack">
+        <section id="results-card" class="card results-card" aria-labelledby="results-title" tabindex="-1">
+          <div class="card-head">
+            <h2 id="results-title"><span data-i18n="results.title">Results</span> <span id="results-offer" class="chip" hidden></span></h2>
+            <button id="share" class="btn btn-small" type="button">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5"/></svg>
+              <span data-i18n="results.share">Copy link</span>
+            </button>
+          </div>
+          <p id="results-invalid" class="empty" data-i18n="results.invalid" hidden>Check the highlighted fields to see the results.</p>
+          <div id="results-body" class="results-body">
+            <div class="headline">
+              <p id="headline-label" class="headline-label"></p>
+              <p id="headline-value" class="headline-value"></p>
+              <p id="headline-count" class="headline-sub"></p>
+            </div>
+            <dl class="tiles">
+              <div class="tile"><dt data-i18n="results.totalPayment">Total payment</dt><dd id="total-payment"></dd></div>
+              <div class="tile"><dt data-i18n="results.totalInterest">Total interest</dt><dd id="total-interest"></dd></div>
+              <div class="tile"><dt data-i18n="results.totalTax">Total tax</dt><dd id="total-tax"></dd></div>
+              <div class="tile"><dt data-i18n="results.totalCost">Total cost</dt><dd id="total-cost"></dd><dd id="total-fees" class="tile-sub"></dd></div>
+              <div class="tile"><dt data-i18n="results.effectiveRate">Effective annual rate</dt><dd id="effective-rate"></dd></div>
+              <div class="tile"><dt data-i18n="results.costRate">Annual cost rate</dt><dd id="cost-rate"></dd><dd class="tile-sub" data-i18n="results.costRateSub">incl. fees and tax</dd></div>
+            </dl>
+            <p id="results-saved" class="saved" hidden></p>
+          </div>
+        </section>
+
+        <section id="chart-card" class="card chart-card" aria-labelledby="chart-title">
+          <div class="card-head">
+            <h2 id="chart-title"><span data-i18n="chart.title">Principal vs interest</span> <span id="chart-unit" class="card-sub"></span></h2>
+          </div>
+          <ul id="chart-legend" class="legend">
+            <li data-part="principal"><span class="swatch swatch-principal" aria-hidden="true"></span><span data-i18n="legend.principal">Principal</span></li>
+            <li data-part="extra"><span class="swatch swatch-extra" aria-hidden="true"></span><span data-i18n="legend.extra">Extra payment</span></li>
+            <li data-part="interest"><span class="swatch swatch-interest" aria-hidden="true"></span><span data-i18n="legend.interest">Interest</span></li>
+            <li data-part="tax"><span class="swatch swatch-tax" aria-hidden="true"></span><span data-i18n="legend.tax">Tax</span></li>
+            <li data-part="capitalized"><span class="swatch swatch-capitalized" aria-hidden="true"></span><span data-i18n="legend.capitalized">Added to balance</span></li>
+            <li data-part="balance"><span class="swatch swatch-balance" aria-hidden="true"></span><span data-i18n="legend.balance">Balance</span></li>
+          </ul>
+          <div id="chart-wrap" class="chart-wrap">
+            <canvas id="chart" class="chart" role="img" tabindex="0"></canvas>
+            <div id="chart-tip" class="chart-tip" role="status" hidden></div>
+          </div>
+          <p id="chart-empty" class="empty" data-i18n="chart.empty" hidden>The chart appears once the inputs are valid.</p>
+        </section>
+      </div>
+
+      <div class="stack">
+        <section id="compare-card" class="card compare-card" aria-labelledby="compare-title" hidden>
+          <div class="card-head">
+            <h2 id="compare-title" data-i18n="compare.title">Offer comparison</h2>
+          </div>
+          <table class="compare-table">
+            <thead>
+              <tr>
+                <td></td>
+                <th scope="col"><button class="offer-pick" type="button" data-offer="a" data-i18n="offer.a">Offer A</button></th>
+                <th scope="col"><button class="offer-pick" type="button" data-offer="b" data-i18n="offer.b">Offer B</button></th>
+              </tr>
+            </thead>
+            <tbody id="compare-body"></tbody>
+          </table>
+          <div class="verdict">
+            <p id="compare-cost" class="verdict-main"></p>
+            <p id="compare-rate"></p>
+          </div>
+          <p class="hint compare-hint" data-i18n="compare.hint">Select an offer to edit it.</p>
+        </section>
+
+        <section id="table-card" class="card table-card" aria-labelledby="table-title">
+          <div class="card-head">
+            <h2 id="table-title" data-i18n="table.title">Payment schedule</h2>
+            <div class="head-actions">
+              <button id="table-toggle" class="btn btn-small btn-ghost" type="button" hidden></button>
+              <button id="table-csv" class="btn btn-small" type="button">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg>
+                <span data-i18n="table.csv">Download CSV</span>
+              </button>
+            </div>
+          </div>
+          <p id="table-empty" class="empty" data-i18n="table.empty" hidden>The schedule appears once the inputs are valid.</p>
+          <div id="schedule-scroll" class="table-scroll" role="region" tabindex="0" data-i18n-aria-label="table.region" aria-label="Payment schedule, scrollable">
+            <table id="schedule" class="schedule">
+              <thead>
+                <tr>
+                  <th scope="col" data-i18n="table.month">Month</th>
+                  <th scope="col" class="c-payment" data-i18n="table.payment">Installment</th>
+                  <th scope="col" class="c-principal" data-i18n="table.principal">Principal</th>
+                  <th scope="col" class="c-interest" data-i18n="table.interest">Interest</th>
+                  <th scope="col" class="c-tax" data-i18n="table.tax">Tax</th>
+                  <th scope="col" class="c-extra" data-i18n="table.extra">Extra</th>
+                  <th scope="col" class="c-balance" data-i18n="table.balance">Balance</th>
+                </tr>
+              </thead>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <p class="note" data-i18n="note.estimate">Results are estimates. Your bank's figures can differ slightly because of rounding, day counts and fees.</p>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <a href="https://github.com/celaldrg/loan-calculator" data-i18n="footer.source">MIT · Source on GitHub</a>
+  </footer>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

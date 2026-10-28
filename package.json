@@ -1,0 +1,11 @@
+{
+  "name": "loan-calculator",
+  "version": "1.0.0",
+  "description": "Loan calculator with cent-exact amortization schedules, tax on interest, extra payments, reverse solvers and offer comparison.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "MIT"
+}
