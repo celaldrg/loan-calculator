@@ -36,7 +36,7 @@ const ERROR_BOXES = Object.freeze({
 const ERROR_INPUTS = Object.freeze({ amount: 'amount', rate: 'rate', termMonths: 'term', taxRate: 'tax', fees: 'fees', graceMonths: 'grace' });
 
 /** Extra-payment input to mark for each extra error code. */
-const EXTRA_ERROR_INPUTS = Object.freeze({ amount: '.extra-amount', month: '.extra-month', every: '.extra-every', end: '.extra-every' });
+const EXTRA_ERROR_INPUTS = Object.freeze({ amount: '.extra-amount', month: '.extra-month', every: '.extra-every', end: '.extra-end' });
 
 /**
  * @typedef {import('./calculator.js').LoanInputs} LoanInputs
@@ -128,10 +128,14 @@ export function createForm(onChange) {
       const index = Number(target.dataset.index);
       if (target.classList.contains('extra-amount')) updateExtra(index, { amount: reformatAmount(target, style) });
       if (target.classList.contains('extra-month')) updateExtra(index, { month: target.valueAsNumber });
+      if (target.classList.contains('extra-end')) updateExtra(index, { end: target.value === '' ? null : target.valueAsNumber });
     });
     el.extrasList.addEventListener('change', (event) => {
       const target = /** @type {HTMLSelectElement} */ (event.target);
-      if (target.classList.contains('extra-every')) updateExtra(Number(target.dataset.index), { every: Number(target.value) });
+      if (!target.classList.contains('extra-every')) return;
+      const every = Number(target.value);
+      target.closest('.extra-row').querySelector('.extra-end-field').hidden = every === 0;
+      updateExtra(Number(target.dataset.index), every === 0 ? { every, end: null } : { every });
     });
     el.extrasList.addEventListener('click', (event) => {
       const button = event.target.closest('.extra-remove');
@@ -184,7 +188,7 @@ export function createForm(onChange) {
     el.extrasEmpty.hidden = inputs.extras.length > 0;
     el.strategy.hidden = inputs.extras.length === 0;
     el.extraAdd.disabled = inputs.extras.length >= LIMITS.maxExtras;
-    for (const node of el.extrasList.querySelectorAll('.extra-month')) node.max = String(term);
+    for (const node of el.extrasList.querySelectorAll('.extra-month, .extra-end')) node.max = String(term);
     for (const node of el.extrasList.querySelectorAll('.extra-symbol')) node.textContent = symbol;
   }
 
@@ -279,6 +283,11 @@ export function createForm(onChange) {
       className: 'extra-month', 'aria-label': t('extras.monthAria', { n }),
     });
     month.value = Number.isFinite(extra.month) ? String(extra.month) : '';
+    const end = h('input', {
+      ...common, type: 'number', inputmode: 'numeric', min: 1, step: 1, placeholder: '—',
+      className: 'extra-end', 'aria-label': t('extras.untilAria', { n }),
+    });
+    end.value = Number.isFinite(extra.end) ? String(extra.end) : '';
     const every = h('select', { ...common, className: 'extra-every', 'aria-label': t('extras.every', { n }) }, ...everyOptions(extra.every));
     return h('li', { className: 'extra-row' },
       h('div', { className: 'affix-field extra-amount-field' },
@@ -286,6 +295,8 @@ export function createForm(onChange) {
       h('button', { type: 'button', className: 'icon-btn extra-remove', 'data-index': index, 'aria-label': t('extras.remove', { n }) }, icon('close')),
       h('div', { className: 'affix-field extra-month-field' }, h('span', { className: 'affix', 'aria-hidden': 'true', text: t('extras.month') }), month),
       every,
+      h('div', { className: 'affix-field extra-end-field', hidden: !(extra.every > 0) },
+        h('span', { className: 'affix', 'aria-hidden': 'true', text: t('extras.until') }), end),
       h('p', { className: 'error', id: errorId, 'aria-live': 'polite' }));
   }
 

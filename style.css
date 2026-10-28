@@ -767,6 +767,7 @@ html[lang="tr"] .pct-field > input {
   grid-template-areas:
     "amount amount remove"
     "month every every"
+    "end end end"
     "error error error";
   gap: 8px;
   padding: 10px;
@@ -791,17 +792,36 @@ html[lang="tr"] .pct-field > input {
   grid-area: every;
 }
 
+.extra-end-field {
+  grid-area: end;
+}
+
+.extra-row:has(> .extra-end-field[hidden]) {
+  grid-template-areas:
+    "amount amount remove"
+    "month every every"
+    "error error error";
+}
+
 .extra-row .error {
   grid-area: error;
 }
 
-.extra-month-field .affix {
+.extra-month-field .affix,
+.extra-end-field .affix {
   font-size: 0.8125rem;
 }
 
 @container (min-width: 520px) {
   .extra-row {
     grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1.2fr) var(--control);
+    grid-template-areas:
+      "amount month every remove"
+      ". . end ."
+      "error error error error";
+  }
+
+  .extra-row:has(> .extra-end-field[hidden]) {
     grid-template-areas:
       "amount month every remove"
       "error error error error";

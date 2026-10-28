@@ -25,7 +25,7 @@ export const MAX_BALANCE_CENTS = 1e12;
  * Share of the installment by which rounding drift may move the last
  * installment before an equal-installment loan counts as fragile.
  */
-const DRIFT_LIMIT = 0.1;
+const DRIFT_LIMIT = 0.02;
 
 /** A fragile loan's level is corrected until its last installment is projected within this share of it. */
 const DRIFT_TARGET = 0.01;

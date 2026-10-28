@@ -4,11 +4,12 @@
  */
 
 /**
- * Relative nudge applied before rounding. It is far larger than binary
- * floating-point noise (~1e-16) and far smaller than a cent, so an exact
- * half such as 1234.5 is never seen as 1234.4999999999998.
+ * Relative nudge applied before rounding: a few ULPs. It covers the binary
+ * floating-point noise of a multiplication or two, so an exact half such as
+ * 1234.5 is never seen as 1234.4999999999998, yet stays far below any real
+ * fraction of a cent even at the largest supported amounts.
  */
-const ROUNDING_NUDGE = 1e-14;
+const ROUNDING_NUDGE = Number.EPSILON * 4;
 
 /**
  * Rounds a fractional cent amount to whole cents, halves away from zero

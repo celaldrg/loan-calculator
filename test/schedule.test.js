@@ -73,6 +73,12 @@ describe('money helpers', () => {
     assert.ok(Object.is(roundCents(-0.4), 0), 'no negative zero');
   });
 
+  test('roundCents does not push large values just below a half over it', () => {
+    assert.equal(roundCents(5_821_298_498.49998), 5_821_298_498);
+    assert.equal(roundCents(5_821_298_498.5), 5_821_298_499);
+    assert.equal(roundCents(99_999_999_999.4999), 99_999_999_999);
+  });
+
   test('toCents and fromCents convert between units and cents', () => {
     assert.equal(toCents(0.1 + 0.2), 30);
     assert.equal(toCents(100000.555), 10000056);
@@ -263,6 +269,27 @@ describe('rounding drift', () => {
     }
   });
 
+  test('long loans that never become fragile still end within 2 % of the level', () => {
+    const loans = [
+      { principal: 2_500_000, monthlyRate: 0.01, termMonths: 360, taxRate: 0.15 },
+      { principal: 25_000_000, monthlyRate: 0.02, termMonths: 360, taxRate: 0.3 },
+      { principal: 1_000_000, monthlyRate: 0.005, termMonths: 360 },
+    ];
+    for (const loan of loans) assert.ok(lastDrift(buildSchedule(loan)) <= 0.02, JSON.stringify(loan));
+    let worst = 0;
+    for (const amount of [10_000, 50_000, 100_000, 250_000, 500_000]) {
+      for (const annual of [0.06, 0.12, 0.18, 0.24, 0.3, 0.36, 0.42, 0.48]) {
+        for (const termMonths of [120, 180, 240, 300, 360]) {
+          for (const taxRate of [0, 0.15, 0.3]) {
+            const rows = buildSchedule({ principal: amount * 100, monthlyRate: annual / 12, termMonths, taxRate });
+            worst = Math.max(worst, lastDrift(rows));
+          }
+        }
+      }
+    }
+    assert.ok(worst <= 0.02, `worst last-installment drift ${worst}`);
+  });
+
   test('a mild drift stays in the last installment instead of moving the level', () => {
     // 1,000 at 1 % per month over 5 years: 22.24 a month and a last installment of 22.62 (1.7 % drift).
     const rows = buildSchedule({ principal: 100_000, monthlyRate: 0.01, termMonths: 60 });
@@ -284,7 +311,7 @@ describe('rounding drift', () => {
             const changes = levelChanges(rows);
             assert.ok(changes.every(({ step }) => Math.abs(step) === 1), `${name}: one-cent steps`);
             assert.ok(changes.every((change, k) => k === 0 || change.month - changes[k - 1].month > 1), `${name}: no flips`);
-            assert.ok(lastDrift(rows) <= (changes.length > 0 ? 0.01 : 0.1), `${name}: last installment in line`);
+            assert.ok(lastDrift(rows) <= (changes.length > 0 ? 0.01 : 0.02), `${name}: last installment in line`);
             if (changes.length > 0) corrected += 1;
           }
         }
